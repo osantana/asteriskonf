@@ -11,16 +11,18 @@ COMMENT_OUT = re.compile(r";.*$")
 is_section = re.compile(r"[][](?P<name>.*?)[][]\s*(\((?P<inherit>[^!]*)\))?")
 is_template = re.compile(r"[][](?P<name>.*?)[][]\s*(\(!,?(?P<inherit>.*?)?\))")
 
-Item = namedtuple("Item", ["sectionno", "section", "itemno", "key", "value"])
+Item = namedtuple("Item", ["filename", "sectionno", "section", "itemno", "key", "value"])
 
 
-class Configuration(object):
-    def __init__(self):
+class Parser(object):
+    def __init__(self, path):
+        self.path = path
+        self.filename = os.path.basename(path)
         self.templates = {}
         self.sections = []
 
-    def parse(self, filename):
-        with open(filename) as config:
+    def parse(self):
+        with open(self.path) as config:
             self.parse_file(config)
 
     def parse_file(self, config):
@@ -47,16 +49,23 @@ class Configuration(object):
 
             current.add_item(line)
 
-    def __iter__(self):
+    @property
+    def items(self):
+        ret = []
         for sectionno, section in enumerate(self.sections):
-            for itemno, item in enumerate(section):
-                yield Item((sectionno + 1) * MULTIPLIER, section.name, (itemno + 1) * MULTIPLIER, item[0], item[1])
+            for itemno, item in enumerate(section.items):
+                ret.append(Item(self.filename,
+                                sectionno * MULTIPLIER,
+                                section.name,
+                                itemno * MULTIPLIER,
+                                item[0], item[1]))
+        return ret
 
 
 class AbstractSection(object):
-    def __init__(self, configuration, name, inherit=None):
+    def __init__(self, configuration, name, inherit):
         self.name = name
-        self.items = []
+        self._items = []
 
         if inherit is None:
             inherit = ""
@@ -69,7 +78,15 @@ class AbstractSection(object):
 
     def add_item(self, line):
         split = "=>" if "=>" in line else "="
-        self.items.append(tuple(i.strip() for i in line.split(split)))
+        self._items.append(tuple(i.strip() for i in line.split(split)))
+
+    @property
+    def items(self):
+        ret = []
+        for template in self.inherit:
+            ret.extend(template.items)
+        ret.extend(self._items)
+        return ret
 
 
 class Template(AbstractSection):
@@ -80,22 +97,3 @@ class Template(AbstractSection):
 class Section(AbstractSection):
     def _add_section(self, configuration):
         configuration.sections.append(self)
-
-    def __iter__(self):
-        for template in self.inherit:
-            for item in template.items:
-                yield item
-
-        for item in self.items:
-            yield item
-
-
-class Parser(object):
-    def __init__(self, path):
-        self.path = path
-        self.filename = os.path.basename(path)
-
-    def parse(self):
-        configuration = Configuration()
-        configuration.parse(self.path)
-        return configuration

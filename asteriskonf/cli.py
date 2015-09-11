@@ -8,21 +8,20 @@ from .parser import Parser
 
 
 SQL_TEMPLATE = ("INSERT INTO {table} (filename, cat_metric, category, var_metric, var_name, var_val, commented) "
-                "VALUES ('{filename}', {item.sectionno}, '{item.section}', {item.itemno}, "
+                "VALUES ('{item.filename}', {item.sectionno}, '{item.section}', {item.itemno}, "
                 "'{item.key}', '{item.value}', 0);")
 
 
-def export_csv(parser, output):
+def export_csv(items, output):
     writer = csv.writer(output)
     writer.writerow(("filename", "section_number", "section", "item_number", "key", "value", "commented"))
-    for item in parser.parse():
-        writer.writerow((parser.filename, item.sectionno, item.section, item.itemno, item.key, item.value, 0))
+    for item in items:
+        writer.writerow((item.filename, item.sectionno, item.section, item.itemno, item.key, item.value, 0))
 
 
-def export_sql(parser, output, table):
-    filename = parser.filename
-    for item in parser.parse():
-        print(SQL_TEMPLATE.format(table=table, filename=filename, item=item), file=output)
+def export_sql(items, output, table):
+    for item in items:
+        print(SQL_TEMPLATE.format(table=table, item=item), file=output)
 
 
 def main():
@@ -44,11 +43,15 @@ def main():
 
     try:
         for configfile in args.configurations:
+
             configuration_parser = Parser(configfile)
+            configuration_parser.parse()
+            items = configuration_parser.items
+
             if args.format == "csv":
-                export_csv(configuration_parser, output)
+                export_csv(items, output)
             elif args.format == "sql":
-                export_sql(configuration_parser, output, table=args.sql_table)
+                export_sql(items, output, args.sql_table)
             else:
                 parser.error("Invalid export format")
                 return 1
