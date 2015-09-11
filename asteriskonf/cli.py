@@ -4,7 +4,7 @@ import sys
 import csv
 import argparse
 
-from .parser import Parser
+from asteriskonf.parser import Parser
 
 
 SQL_TEMPLATE = ("INSERT INTO {table} (filename, cat_metric, category, var_metric, var_name, var_val, commented) "
