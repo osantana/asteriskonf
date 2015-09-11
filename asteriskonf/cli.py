@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import sys
+import csv
 import argparse
 
-from parser import Parser
+from .parser import Parser
 
 
 SQL_TEMPLATE = ("INSERT INTO {table} (filename, cat_metric, category, var_metric, var_name, var_val, commented) "
@@ -12,7 +13,11 @@ SQL_TEMPLATE = ("INSERT INTO {table} (filename, cat_metric, category, var_metric
 
 
 def export_csv(parser, output):
-    filename = parser.filename
+    writer = csv.writer(output)
+    writer.writerow(("filename", "section_number", "section", "item_number", "key", "value", "commented"))
+    for item in parser.parse():
+        writer.writerow((parser.filename, item.sectionno, item.section, item.itemno, item.key, item.value, 0))
+
 
 def export_sql(parser, output, table):
     filename = parser.filename

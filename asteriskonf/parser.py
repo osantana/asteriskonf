@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import re
+import os
 from collections import namedtuple
 
 
@@ -27,7 +28,7 @@ class Configuration(object):
         for raw_line in config:
             line = COMMENT_OUT.sub("", raw_line).strip()
             if raw_line.lstrip().startswith(";"):
-                pass  # TODO: commented line
+                continue  # TODO: commented line
 
             if not line:
                 continue
@@ -90,10 +91,11 @@ class Section(AbstractSection):
 
 
 class Parser(object):
-    def __init__(self, filename):
-        self.filename = filename
+    def __init__(self, path):
+        self.path = path
+        self.filename = os.path.basename(path)
 
     def parse(self):
         configuration = Configuration()
-        configuration.parse(self.filename)
+        configuration.parse(self.path)
         return configuration
