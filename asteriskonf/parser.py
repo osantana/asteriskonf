@@ -1,13 +1,16 @@
 # coding: utf-8
 
-
 import re
+from collections import namedtuple
 
 
+MULTIPLIER = 10
 COMMENT_OUT = re.compile(r";.*$")
 
 is_section = re.compile(r"[][](?P<name>.*?)[][]\s*(\((?P<inherit>[^!]*)\))?")
 is_template = re.compile(r"[][](?P<name>.*?)[][]\s*(\(!,?(?P<inherit>.*?)?\))")
+
+Item = namedtuple("Item", ["sectionno", "section", "itemno", "key", "value"])
 
 
 class Configuration(object):
@@ -46,7 +49,7 @@ class Configuration(object):
     def __iter__(self):
         for sectionno, section in enumerate(self.sections):
             for itemno, item in enumerate(section):
-                yield sectionno, section.name, itemno, item[0], item[1]
+                yield Item((sectionno + 1) * MULTIPLIER, section.name, (itemno + 1) * MULTIPLIER, item[0], item[1])
 
 
 class AbstractSection(object):
